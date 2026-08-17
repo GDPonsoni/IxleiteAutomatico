@@ -1,0 +1,13 @@
+node_modules/
+uploads/*
+!uploads/.gitkeep
+.DS_Store
+*.log
+.env
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.env.local
+package-lock.json

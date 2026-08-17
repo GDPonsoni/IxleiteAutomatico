@@ -1,0 +1,11 @@
+{
+  "logo": "/uploads/1783364285060.png",
+  "background": null,
+  "motivacaoDestaque": "/uploads/1783366734231.png",
+  "cores": {
+    "primaria": "#DC0000",
+    "secundaria": "#FFD700",
+    "branca": "#FFFFFF",
+    "preta": "#000000"
+  }
+}
