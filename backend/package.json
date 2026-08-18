@@ -1,7 +1,7 @@
 {
-  "name": "ixleite-escala-app",
+  "name": "escala-app",
   "version": "1.0.0",
-  "description": "App para gerenciar escalas de limpeza da república Ixleite Automático",
+  "description": "App para gerenciar escalas de limpeza",
   "main": "server.js",
   "type": "module",
   "scripts": {

@@ -7,10 +7,8 @@ https://nodejs.org/ (versão LTS)
 
 ### 2. Execute
 ```bash
-cd /home/nb058/Área\ de\ trabalho/IxleiteAutomaticoEscalas
-./start.sh          # Linux/Mac
-# ou
-start.bat           # Windows
+cd escala
+npm start           # Ou rode o backend: cd backend && npm start
 ```
 
 ### 3. Acesse
@@ -47,3 +45,6 @@ Próxima: Todos em cômodos diferentes!
 | App não abre | Reinicie servidor (Ctrl+C + npm start) |
 
 **Pronto!** 🎉
+
+---
+Para documentação completa sobre arquitetura, APIs e modelo de dados, consulte a pasta [`docs/`](file:///c:/Users/leona/escala/docs/README.md).
