@@ -888,7 +888,11 @@ app.use((err, req, res, next) => {
   next();
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
-  console.log('Acesse o app no navegador!');
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Servidor rodando em http://localhost:${PORT}`);
+    console.log('Acesse o app no navegador!');
+  });
+}
+
+export default app;
