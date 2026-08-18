@@ -1,22 +1,5 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const readJsonFile = (filename) => {
-  try {
-    return JSON.parse(fs.readFileSync(path.join(__dirname, filename), 'utf8'));
-  } catch {
-    return null;
-  }
-};
-
-const writeJsonFile = (filename, data) => {
-  fs.writeFileSync(path.join(__dirname, filename), JSON.stringify(data, null, 2));
-};
+import { supabase } from './supabaseClient.js';
 
 const sameId = (a, b) => a !== undefined && a !== null && b !== undefined && b !== null && String(a) === String(b);
 
@@ -32,20 +15,58 @@ export const normalizeNumber = (value, fallback = 0) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
-const DEFAULT_CORES = {
-  primaria: '#DC0000',
-  secundaria: '#FFD700',
-  branca: '#FFFFFF',
-  preta: '#000000'
+const check = ({ data, error }) => {
+  if (error) throw new Error(error.message);
+  return data;
 };
 
-const DEFAULT_CONFIG = {
-  logo: null,
-  background: null,
-  motivacaoDestaque: null,
-  cores: DEFAULT_CORES
+// ===== INTEGRANTES =====
+const integranteFromDb = (row) => ({
+  id: row.id,
+  nome: row.nome,
+  isSuite: row.is_suite,
+  ativo: row.ativo
+});
+
+export const IntegrantesStore = {
+  async list() {
+    const rows = check(await supabase.from('integrantes').select('*'));
+    return rows.map(integranteFromDb);
+  },
+  async findById(id) {
+    return (await this.list()).find((integrante) => sameId(integrante.id, id)) || null;
+  },
+  async findByNome(nome, { excludeId } = {}) {
+    const alvo = String(nome || '').trim().toLowerCase();
+    return (await this.list()).find((integrante) =>
+      String(integrante.nome || '').trim().toLowerCase() === alvo &&
+      !sameId(integrante.id, excludeId)
+    ) || null;
+  },
+  async create({ nome, isSuite }) {
+    const row = check(await supabase.from('integrantes').insert({
+      nome: nome.trim(),
+      is_suite: normalizeBoolean(isSuite, false),
+      ativo: true
+    }).select().single());
+    return integranteFromDb(row);
+  },
+  async update(id, changes) {
+    const dbChanges = {};
+    if (changes.nome !== undefined) dbChanges.nome = changes.nome;
+    if (changes.isSuite !== undefined) dbChanges.is_suite = changes.isSuite;
+    if (changes.ativo !== undefined) dbChanges.ativo = changes.ativo;
+
+    const row = check(await supabase.from('integrantes').update(dbChanges).eq('id', id).select().maybeSingle());
+    return row ? integranteFromDb(row) : null;
+  },
+  async remove(id) {
+    const rows = check(await supabase.from('integrantes').delete().eq('id', id).select());
+    return rows.length > 0;
+  }
 };
 
+// ===== COMODOS =====
 const DEFAULT_COMODO_CONFIG = {
   imagem: null,
   apenassuiteMembers: false,
@@ -54,15 +75,6 @@ const DEFAULT_COMODO_CONFIG = {
   obrigatorio: true,
   ordem: 0
 };
-
-const normalizeConfig = (config = {}) => ({
-  ...DEFAULT_CONFIG,
-  ...config,
-  cores: {
-    ...DEFAULT_CORES,
-    ...(config.cores || {})
-  }
-});
 
 const normalizeComodo = (comodo = {}, index = 0) => ({
   ...DEFAULT_COMODO_CONFIG,
@@ -73,182 +85,199 @@ const normalizeComodo = (comodo = {}, index = 0) => ({
   ordem: Math.max(0, Math.trunc(normalizeNumber(comodo.ordem, index)))
 });
 
-// ===== INTEGRANTES =====
-export const IntegrantesStore = {
-  list() {
-    return readJsonFile('integrantes.json') || [];
-  },
-  findById(id) {
-    return this.list().find((integrante) => sameId(integrante.id, id)) || null;
-  },
-  findByNome(nome, { excludeId } = {}) {
-    const alvo = String(nome || '').trim().toLowerCase();
-    return this.list().find((integrante) =>
-      String(integrante.nome || '').trim().toLowerCase() === alvo &&
-      !sameId(integrante.id, excludeId)
-    ) || null;
-  },
-  create({ nome, isSuite }) {
-    const integrantes = this.list();
-    const novo = {
-      id: randomUUID(),
-      nome: nome.trim(),
-      isSuite: normalizeBoolean(isSuite, false),
-      ativo: true
-    };
-    integrantes.push(novo);
-    writeJsonFile('integrantes.json', integrantes);
-    return novo;
-  },
-  update(id, changes) {
-    const integrantes = this.list();
-    const idx = integrantes.findIndex((integrante) => sameId(integrante.id, id));
-    if (idx === -1) return null;
-    const atualizado = { ...integrantes[idx], ...changes };
-    integrantes[idx] = atualizado;
-    writeJsonFile('integrantes.json', integrantes);
-    return atualizado;
-  },
-  remove(id) {
-    const integrantes = this.list();
-    const existe = integrantes.some((integrante) => sameId(integrante.id, id));
-    if (!existe) return false;
-    writeJsonFile('integrantes.json', integrantes.filter((integrante) => !sameId(integrante.id, id)));
-    return true;
-  }
+const comodoFromDb = (row) => ({
+  id: row.id,
+  nome: row.nome,
+  imagem: row.imagem,
+  apenassuiteMembers: row.apenas_suite_members,
+  pessoasNecessarias: row.pessoas_necessarias,
+  permitirMultiplasAtribuicoes: row.permitir_multiplas_atribuicoes,
+  obrigatorio: row.obrigatorio,
+  ordem: row.ordem
+});
+
+const comodoChangesToDb = (changes) => {
+  const dbChanges = {};
+  if (changes.nome !== undefined) dbChanges.nome = changes.nome;
+  if (changes.imagem !== undefined) dbChanges.imagem = changes.imagem;
+  if (changes.apenassuiteMembers !== undefined) dbChanges.apenas_suite_members = normalizeBoolean(changes.apenassuiteMembers, false);
+  if (changes.pessoasNecessarias !== undefined) dbChanges.pessoas_necessarias = Math.max(1, Math.min(10, normalizeNumber(changes.pessoasNecessarias, 1)));
+  if (changes.permitirMultiplasAtribuicoes !== undefined) dbChanges.permitir_multiplas_atribuicoes = normalizeBoolean(changes.permitirMultiplasAtribuicoes, false);
+  if (changes.obrigatorio !== undefined) dbChanges.obrigatorio = normalizeBoolean(changes.obrigatorio, true);
+  if (changes.ordem !== undefined) dbChanges.ordem = Math.max(0, Math.trunc(normalizeNumber(changes.ordem, 0)));
+  return dbChanges;
 };
 
-// ===== COMODOS =====
 export const ComodosStore = {
-  list() {
-    const comodos = readJsonFile('comodos.json') || [];
-    return comodos.map((comodo, index) => normalizeComodo(comodo, index));
+  async list() {
+    const rows = check(await supabase.from('comodos').select('*'));
+    return rows.map((row, index) => normalizeComodo(comodoFromDb(row), index));
   },
-  findById(id) {
-    return this.list().find((comodo) => sameId(comodo.id, id)) || null;
+  async findById(id) {
+    return (await this.list()).find((comodo) => sameId(comodo.id, id)) || null;
   },
-  create(data) {
-    const comodos = this.list();
-    const novo = normalizeComodo({ ...data, id: randomUUID() }, comodos.length + 1);
-    const bruto = readJsonFile('comodos.json') || [];
-    bruto.push(novo);
-    writeJsonFile('comodos.json', bruto);
-    return novo;
+  async create(data) {
+    const novo = normalizeComodo(data);
+    const row = check(await supabase.from('comodos').insert({
+      nome: novo.nome,
+      imagem: novo.imagem,
+      apenas_suite_members: novo.apenassuiteMembers,
+      pessoas_necessarias: novo.pessoasNecessarias,
+      permitir_multiplas_atribuicoes: novo.permitirMultiplasAtribuicoes,
+      obrigatorio: novo.obrigatorio,
+      ordem: novo.ordem
+    }).select().single());
+    return normalizeComodo(comodoFromDb(row));
   },
-  update(id, changes) {
-    const bruto = readJsonFile('comodos.json') || [];
-    const idx = bruto.findIndex((comodo) => sameId(comodo.id, id));
-    if (idx === -1) return null;
-    const atualizado = normalizeComodo({ ...bruto[idx], ...changes }, idx);
-    bruto[idx] = atualizado;
-    writeJsonFile('comodos.json', bruto);
-    return atualizado;
+  async update(id, changes) {
+    const row = check(await supabase.from('comodos').update(comodoChangesToDb(changes)).eq('id', id).select().maybeSingle());
+    return row ? normalizeComodo(comodoFromDb(row)) : null;
   },
-  remove(id) {
-    const bruto = readJsonFile('comodos.json') || [];
-    const existe = bruto.some((comodo) => sameId(comodo.id, id));
-    if (!existe) return false;
-    writeJsonFile('comodos.json', bruto.filter((comodo) => !sameId(comodo.id, id)));
-    return true;
+  async remove(id) {
+    const rows = check(await supabase.from('comodos').delete().eq('id', id).select());
+    return rows.length > 0;
   }
 };
 
 // ===== INFRAÇÕES =====
+const infracaoFromDb = (row) => ({
+  id: row.id,
+  integranteId: row.integrante_id,
+  integranteNome: row.integrante_nome,
+  descricao: row.descricao,
+  dataSemana: row.data_semana,
+  dataRegistro: row.data_registro
+});
+
 export const InfracoesStore = {
-  list() {
-    return readJsonFile('infracoes.json') || [];
+  async list() {
+    const rows = check(await supabase.from('infracoes').select('*'));
+    return rows.map(infracaoFromDb);
   },
-  findById(id) {
-    return this.list().find((infracao) => sameId(infracao.id, id)) || null;
+  async findById(id) {
+    return (await this.list()).find((infracao) => sameId(infracao.id, id)) || null;
   },
-  listByIntegranteId(integranteId) {
-    return this.list().filter((infracao) => sameId(infracao.integranteId, integranteId));
+  async listByIntegranteId(integranteId) {
+    return (await this.list()).filter((infracao) => sameId(infracao.integranteId, integranteId));
   },
-  create({ integranteId, integranteNome, descricao, dataSemana }) {
-    const infracoes = this.list();
-    const nova = {
-      id: randomUUID(),
-      integranteId: String(integranteId),
-      integranteNome,
+  async create({ integranteId, integranteNome, descricao, dataSemana }) {
+    const row = check(await supabase.from('infracoes').insert({
+      integrante_id: String(integranteId),
+      integrante_nome: integranteNome,
       descricao: descricao.trim(),
-      dataSemana: dataSemana || new Date().toISOString(),
-      dataRegistro: new Date().toISOString()
-    };
-    infracoes.push(nova);
-    writeJsonFile('infracoes.json', infracoes);
-    return nova;
+      data_semana: dataSemana || new Date().toISOString()
+    }).select().single());
+    return infracaoFromDb(row);
   },
-  update(id, changes) {
-    const infracoes = this.list();
-    const idx = infracoes.findIndex((infracao) => sameId(infracao.id, id));
-    if (idx === -1) return null;
-    const atualizada = { ...infracoes[idx], ...changes };
-    infracoes[idx] = atualizada;
-    writeJsonFile('infracoes.json', infracoes);
-    return atualizada;
+  async update(id, changes) {
+    const dbChanges = {};
+    if (changes.descricao !== undefined) dbChanges.descricao = changes.descricao;
+    if (changes.dataSemana !== undefined) dbChanges.data_semana = changes.dataSemana;
+
+    const row = check(await supabase.from('infracoes').update(dbChanges).eq('id', id).select().maybeSingle());
+    return row ? infracaoFromDb(row) : null;
   },
-  remove(id) {
-    const infracoes = this.list();
-    const existe = infracoes.some((infracao) => sameId(infracao.id, id));
-    if (!existe) return false;
-    writeJsonFile('infracoes.json', infracoes.filter((infracao) => !sameId(infracao.id, id)));
-    return true;
+  async remove(id) {
+    const rows = check(await supabase.from('infracoes').delete().eq('id', id).select());
+    return rows.length > 0;
   }
 };
 
 // ===== ESCALAS =====
+const escalaFromDb = (row) => ({
+  id: row.id,
+  ano: row.ano,
+  semana: row.semana,
+  integranteId: row.integrante_id,
+  integranteNome: row.integrante_nome,
+  folga: row.folga,
+  comodos: row.comodos,
+  dataInicio: row.data_inicio,
+  dataFim: row.data_fim,
+  alerta: row.alerta
+});
+
+const escalaToDb = (escala) => ({
+  id: escala.id,
+  ano: escala.ano,
+  semana: escala.semana,
+  integrante_id: escala.integranteId,
+  integrante_nome: escala.integranteNome,
+  folga: escala.folga,
+  comodos: escala.comodos,
+  data_inicio: escala.dataInicio,
+  data_fim: escala.dataFim,
+  alerta: escala.alerta
+});
+
 export const EscalasStore = {
-  list() {
-    return readJsonFile('escalas.json') || [];
+  async list() {
+    const rows = check(await supabase.from('escalas').select('*'));
+    return rows.map(escalaFromDb);
   },
-  findById(id) {
-    return this.list().find((escala) => sameId(escala.id, id)) || null;
+  async findById(id) {
+    return (await this.list()).find((escala) => sameId(escala.id, id)) || null;
   },
-  listBySemana(ano, semana) {
-    return this.list().filter((escala) => escala.ano === ano && escala.semana === semana);
+  async listBySemana(ano, semana) {
+    const rows = check(await supabase.from('escalas').select('*').eq('ano', ano).eq('semana', semana));
+    return rows.map(escalaFromDb);
   },
-  replaceSemana(ano, semana, novasLinhas) {
-    const restante = this.list().filter((escala) => !(escala.ano === ano && escala.semana === semana));
-    writeJsonFile('escalas.json', [...restante, ...novasLinhas]);
+  async replaceSemana(ano, semana, novasLinhas) {
+    check(await supabase.from('escalas').delete().eq('ano', ano).eq('semana', semana));
+    if (novasLinhas.length > 0) {
+      check(await supabase.from('escalas').insert(novasLinhas.map(escalaToDb)));
+    }
     return novasLinhas;
   },
-  removeSemana(ano, semana) {
-    const escalas = this.list();
-    const restante = escalas.filter((escala) => !(escala.ano === ano && escala.semana === semana));
-    writeJsonFile('escalas.json', restante);
-    return escalas.length - restante.length;
+  async removeSemana(ano, semana) {
+    const rows = check(await supabase.from('escalas').delete().eq('ano', ano).eq('semana', semana).select());
+    return rows.length;
   },
-  update(id, changes) {
-    const escalas = this.list();
-    const idx = escalas.findIndex((escala) => sameId(escala.id, id));
-    if (idx === -1) return null;
-    const atualizada = { ...escalas[idx], ...changes };
-    escalas[idx] = atualizada;
-    writeJsonFile('escalas.json', escalas);
-    return atualizada;
+  async update(id, changes) {
+    const dbChanges = {};
+    if (changes.comodos !== undefined) dbChanges.comodos = changes.comodos;
+    if (changes.folga !== undefined) dbChanges.folga = changes.folga;
+
+    const row = check(await supabase.from('escalas').update(dbChanges).eq('id', id).select().maybeSingle());
+    return row ? escalaFromDb(row) : null;
   },
-  updateMany(updates) {
-    const escalas = this.list();
+  async updateMany(updates) {
     const resultados = [];
-    updates.forEach(({ id, changes }) => {
-      const idx = escalas.findIndex((escala) => sameId(escala.id, id));
-      if (idx !== -1) {
-        escalas[idx] = { ...escalas[idx], ...changes };
-        resultados.push(escalas[idx]);
-      }
-    });
-    writeJsonFile('escalas.json', escalas);
+    for (const { id, changes } of updates) {
+      const atualizada = await this.update(id, changes);
+      if (atualizada) resultados.push(atualizada);
+    }
     return resultados;
   }
 };
 
 // ===== CONFIG =====
+const DEFAULT_CORES = {
+  primaria: '#DC0000',
+  secundaria: '#FFD700',
+  branca: '#FFFFFF',
+  preta: '#000000'
+};
+
+const configFromDb = (row) => ({
+  logo: row.logo,
+  background: row.background,
+  motivacaoDestaque: row.motivacao_destaque,
+  cores: { ...DEFAULT_CORES, ...(row.cores || {}) }
+});
+
 export const ConfigStore = {
-  get() {
-    return normalizeConfig(readJsonFile('config.json') || {});
+  async get() {
+    const row = check(await supabase.from('config').select('*').eq('id', 1).single());
+    return configFromDb(row);
   },
-  save(config) {
-    writeJsonFile('config.json', config);
-    return config;
+  async save(config) {
+    const row = check(await supabase.from('config').update({
+      logo: config.logo,
+      background: config.background,
+      motivacao_destaque: config.motivacaoDestaque,
+      cores: { ...DEFAULT_CORES, ...(config.cores || {}) }
+    }).eq('id', 1).select().single());
+    return configFromDb(row);
   }
 };

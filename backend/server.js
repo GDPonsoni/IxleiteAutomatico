@@ -1,9 +1,9 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { randomUUID } from 'crypto';
@@ -16,10 +16,10 @@ import {
   normalizeBoolean,
   normalizeNumber
 } from './data/store.js';
+import { uploadImage, deleteImage, listGalleryImages, deleteImageByFilename, getKeyFromUrl } from './lib/storage.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const uploadsDir = path.join(__dirname, 'uploads');
 
 const HEX_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/;
 const ALLOWED_IMAGE_EXTENSIONS = /\.(png|jpe?g|webp|gif)$/i;
@@ -27,29 +27,21 @@ const ALLOWED_IMAGE_EXTENSIONS = /\.(png|jpe?g|webp|gif)$/i;
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../frontend')));
-app.use('/uploads', express.static(uploadsDir));
 
-// Configurar multer para upload de imagens (limite de 5MB e tipos permitidos)
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${randomUUID()}${path.extname(file.originalname)}`);
-  }
+// Converte handlers assíncronos: erros caem aqui em vez de derrubar o processo
+const asyncHandler = (fn) => (req, res) => fn(req, res).catch((err) => {
+  console.error(err);
+  res.status(500).json({ error: 'Erro ao acessar o banco de dados' });
 });
 
+// Configurar multer para upload de imagens (limite de 5MB e tipos permitidos)
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (!ALLOWED_IMAGE_EXTENSIONS.test(file.originalname)) {
@@ -73,40 +65,15 @@ const sortByOrderThenName = (a, b) => {
   return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
 };
 
-const getFileNameFromUploadPath = (value) => {
-  if (!value || typeof value !== 'string' || !value.startsWith('/uploads/')) return null;
-  return path.basename(value);
-};
-
-const isImageFile = (fileName) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(fileName);
-
-const deleteUploadFile = (imagePathOrUrl) => {
-  const fileName = getFileNameFromUploadPath(imagePathOrUrl);
-  if (!fileName) return;
-  fs.unlink(path.join(uploadsDir, fileName), () => {});
-};
-
-// Lista os arquivos de imagem disponíveis para a galeria motivacional (exclui logo e fundo)
-const listarGaleriaMotivacao = (config) => {
-  const logoFile = getFileNameFromUploadPath(config.logo);
-  const backgroundFile = getFileNameFromUploadPath(config.background);
-
-  return fs.readdirSync(uploadsDir, { withFileTypes: true })
-    .filter(entry => entry.isFile())
-    .map(entry => entry.name)
-    .filter(fileName => isImageFile(fileName))
-    .filter(fileName => fileName !== logoFile && fileName !== backgroundFile);
-};
-
 // Escolhe uma imagem aleatória da galeria, evitando repetir a atual quando há outra opção
-const sortearMotivacaoDestaque = (config) => {
-  const galeria = listarGaleriaMotivacao(config);
+const sortearMotivacaoDestaque = async (config) => {
+  const galeria = await listGalleryImages({ exclude: [config.logo, config.background].filter(Boolean) });
   if (galeria.length === 0) return config.motivacaoDestaque || null;
 
-  const candidatos = galeria.filter(fileName => `/uploads/${fileName}` !== config.motivacaoDestaque);
+  const candidatos = galeria.filter(imagem => imagem.path !== config.motivacaoDestaque);
   const pool = candidatos.length > 0 ? candidatos : galeria;
   const escolhido = pool[Math.floor(Math.random() * pool.length)];
-  return `/uploads/${escolhido}`;
+  return escolhido.path;
 };
 
 // Segunda-feira (00:00) da semana da data informada, sem mutar a data original
@@ -159,27 +126,27 @@ function validarComodoPayload(body, { parcial = false } = {}) {
 }
 
 // ===== ROTAS DE INTEGRANTES =====
-app.get('/api/integrantes', (req, res) => {
-  res.json(IntegrantesStore.list());
-});
+app.get('/api/integrantes', asyncHandler(async (req, res) => {
+  res.json(await IntegrantesStore.list());
+}));
 
-app.post('/api/integrantes', (req, res) => {
+app.post('/api/integrantes', asyncHandler(async (req, res) => {
   const { nome, isSuite } = req.body;
 
   if (!nome || !String(nome).trim()) {
     return res.status(400).json({ error: 'O nome do integrante é obrigatório.' });
   }
 
-  if (IntegrantesStore.findByNome(nome)) {
+  if (await IntegrantesStore.findByNome(nome)) {
     return res.status(400).json({ error: 'Já existe um integrante com esse nome.' });
   }
 
-  const novoIntegrante = IntegrantesStore.create({ nome, isSuite });
+  const novoIntegrante = await IntegrantesStore.create({ nome, isSuite });
   res.json(novoIntegrante);
-});
+}));
 
-app.put('/api/integrantes/:id', (req, res) => {
-  const existente = IntegrantesStore.findById(req.params.id);
+app.put('/api/integrantes/:id', asyncHandler(async (req, res) => {
+  const existente = await IntegrantesStore.findById(req.params.id);
   if (!existente) {
     return res.status(404).json({ error: 'Integrante não encontrado' });
   }
@@ -191,7 +158,7 @@ app.put('/api/integrantes/:id', (req, res) => {
     if (!String(nome).trim()) {
       return res.status(400).json({ error: 'O nome do integrante é obrigatório.' });
     }
-    if (IntegrantesStore.findByNome(nome, { excludeId: existente.id })) {
+    if (await IntegrantesStore.findByNome(nome, { excludeId: existente.id })) {
       return res.status(400).json({ error: 'Já existe um integrante com esse nome.' });
     }
     changes.nome = String(nome).trim();
@@ -199,32 +166,32 @@ app.put('/api/integrantes/:id', (req, res) => {
   if (isSuite !== undefined) changes.isSuite = normalizeBoolean(isSuite, existente.isSuite);
   if (ativo !== undefined) changes.ativo = normalizeBoolean(ativo, existente.ativo);
 
-  const atualizado = IntegrantesStore.update(req.params.id, changes);
+  const atualizado = await IntegrantesStore.update(req.params.id, changes);
   res.json(atualizado);
-});
+}));
 
-app.delete('/api/integrantes/:id', (req, res) => {
-  const existente = IntegrantesStore.findById(req.params.id);
+app.delete('/api/integrantes/:id', asyncHandler(async (req, res) => {
+  const existente = await IntegrantesStore.findById(req.params.id);
   if (!existente) {
     return res.status(404).json({ error: 'Integrante não encontrado' });
   }
-  IntegrantesStore.remove(req.params.id);
+  await IntegrantesStore.remove(req.params.id);
   res.json({ success: true });
-});
+}));
 
 // ===== ROTAS DE CÔMODOS =====
-app.get('/api/comodos', (req, res) => {
-  res.json(ComodosStore.list().sort(sortByOrderThenName));
-});
+app.get('/api/comodos', asyncHandler(async (req, res) => {
+  res.json((await ComodosStore.list()).sort(sortByOrderThenName));
+}));
 
-app.post('/api/comodos', (req, res) => {
+app.post('/api/comodos', asyncHandler(async (req, res) => {
   const erros = validarComodoPayload(req.body, { parcial: false });
   if (erros.length > 0) {
     return res.status(400).json({ error: erros[0], erros });
   }
 
   const { nome, imagem, apenassuiteMembers, pessoasNecessarias, permitirMultiplasAtribuicoes, obrigatorio, ordem } = req.body;
-  const novoComodo = ComodosStore.create({
+  const novoComodo = await ComodosStore.create({
     nome: String(nome).trim(),
     imagem: imagem || null,
     apenassuiteMembers,
@@ -234,10 +201,10 @@ app.post('/api/comodos', (req, res) => {
     ordem
   });
   res.json(novoComodo);
-});
+}));
 
-app.put('/api/comodos/:id', (req, res) => {
-  const existente = ComodosStore.findById(req.params.id);
+app.put('/api/comodos/:id', asyncHandler(async (req, res) => {
+  const existente = await ComodosStore.findById(req.params.id);
   if (!existente) {
     return res.status(404).json({ error: 'Cômodo não encontrado' });
   }
@@ -257,61 +224,64 @@ app.put('/api/comodos/:id', (req, res) => {
   if (ordem !== undefined) changes.ordem = ordem;
 
   if (imagem !== undefined && imagem !== existente.imagem) {
-    deleteUploadFile(existente.imagem);
+    await deleteImage(existente.imagem);
     changes.imagem = imagem || null;
   }
 
-  const atualizado = ComodosStore.update(req.params.id, changes);
+  const atualizado = await ComodosStore.update(req.params.id, changes);
   res.json(atualizado);
-});
+}));
 
-app.delete('/api/comodos/:id', (req, res) => {
-  const existente = ComodosStore.findById(req.params.id);
+app.delete('/api/comodos/:id', asyncHandler(async (req, res) => {
+  const existente = await ComodosStore.findById(req.params.id);
   if (!existente) {
     return res.status(404).json({ error: 'Cômodo não encontrado' });
   }
-  deleteUploadFile(existente.imagem);
-  ComodosStore.remove(req.params.id);
+  await deleteImage(existente.imagem);
+  await ComodosStore.remove(req.params.id);
   res.json({ success: true });
-});
+}));
 
 // Upload de imagem para cômodo
-app.post('/api/upload-comodo-image', upload.single('image'), (req, res) => {
+app.post('/api/upload-comodo-image', upload.single('image'), asyncHandler(async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'Nenhuma imagem enviada' });
   }
-  res.json({ filename: req.file.filename, path: `/uploads/${req.file.filename}` });
-});
+  const { filename, path: imagePath } = await uploadImage(req.file.buffer, req.file.originalname, req.file.mimetype);
+  res.json({ filename, path: imagePath });
+}));
 
 // Upload de imagem motivacional
-app.post('/api/upload-motivacao-image', upload.single('image'), (req, res) => {
+app.post('/api/upload-motivacao-image', upload.single('image'), asyncHandler(async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'Nenhuma imagem enviada' });
   }
-  res.json({ filename: req.file.filename, path: `/uploads/${req.file.filename}` });
-});
+  const { filename, path: imagePath } = await uploadImage(req.file.buffer, req.file.originalname, req.file.mimetype);
+  res.json({ filename, path: imagePath });
+}));
 
-app.post('/api/upload-background-image', upload.single('image'), (req, res) => {
+app.post('/api/upload-background-image', upload.single('image'), asyncHandler(async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'Nenhuma imagem enviada' });
   }
 
-  const config = ConfigStore.get();
-  deleteUploadFile(config.background);
-  config.background = `/uploads/${req.file.filename}`;
-  ConfigStore.save(config);
+  const config = await ConfigStore.get();
+  await deleteImage(config.background);
+  const { path: imagePath, filename } = await uploadImage(req.file.buffer, req.file.originalname, req.file.mimetype);
+  config.background = imagePath;
+  await ConfigStore.save(config);
 
-  res.json({ filename: req.file.filename, path: config.background, config });
-});
+  res.json({ filename, path: config.background, config });
+}));
 
 // ===== ROTAS DE ESCALA =====
-app.get('/api/escala/atual', (req, res) => {
+app.get('/api/escala/atual', asyncHandler(async (req, res) => {
   const semanaAtual = getSemanaAtual();
-  res.json(EscalasStore.listBySemana(semanaAtual.ano, semanaAtual.semana));
-});
+  res.json(await EscalasStore.listBySemana(semanaAtual.ano, semanaAtual.semana));
+}));
 
-app.get('/api/escala/historico', (req, res) => {
-  const escalas = EscalasStore.list();
+app.get('/api/escala/historico', asyncHandler(async (req, res) => {
+  const escalas = await EscalasStore.list();
   const escalaPorSemana = {};
 
   escalas.forEach(escala => {
@@ -323,9 +293,9 @@ app.get('/api/escala/historico', (req, res) => {
   });
 
   res.json(escalaPorSemana);
-});
+}));
 
-app.delete('/api/escala/historico/:ano/:semana', (req, res) => {
+app.delete('/api/escala/historico/:ano/:semana', asyncHandler(async (req, res) => {
   const ano = normalizeNumber(req.params.ano, null);
   const semana = normalizeNumber(req.params.semana, null);
 
@@ -333,13 +303,13 @@ app.delete('/api/escala/historico/:ano/:semana', (req, res) => {
     return res.status(400).json({ error: 'Ano e semana são obrigatórios' });
   }
 
-  const removed = EscalasStore.removeSemana(ano, semana);
+  const removed = await EscalasStore.removeSemana(ano, semana);
 
   res.json({ success: true, removed });
-});
+}));
 
-app.put('/api/escala/:id', (req, res) => {
-  const existente = EscalasStore.findById(req.params.id);
+app.put('/api/escala/:id', asyncHandler(async (req, res) => {
+  const existente = await EscalasStore.findById(req.params.id);
   if (!existente) {
     return res.status(404).json({ error: 'Registro de escala não encontrado' });
   }
@@ -361,11 +331,11 @@ app.put('/api/escala/:id', (req, res) => {
     changes.folga = normalizeBoolean(req.body.folga, existente.folga);
   }
 
-  const atualizado = EscalasStore.update(req.params.id, changes);
+  const atualizado = await EscalasStore.update(req.params.id, changes);
   res.json(atualizado);
-});
+}));
 
-app.post('/api/escala/atual/trocar', (req, res) => {
+app.post('/api/escala/atual/trocar', asyncHandler(async (req, res) => {
   const { integranteAId, integranteBId } = req.body;
 
   if (!integranteAId || !integranteBId) {
@@ -376,7 +346,7 @@ app.post('/api/escala/atual/trocar', (req, res) => {
   }
 
   const semanaAtual = getSemanaAtual();
-  const escalasSemana = EscalasStore.listBySemana(semanaAtual.ano, semanaAtual.semana);
+  const escalasSemana = await EscalasStore.listBySemana(semanaAtual.ano, semanaAtual.semana);
   const linhaA = escalasSemana.find(e => String(e.integranteId) === String(integranteAId));
   const linhaB = escalasSemana.find(e => String(e.integranteId) === String(integranteBId));
 
@@ -384,21 +354,21 @@ app.post('/api/escala/atual/trocar', (req, res) => {
     return res.status(404).json({ error: 'Um dos integrantes não está na escala da semana atual' });
   }
 
-  const resultados = EscalasStore.updateMany([
+  const resultados = await EscalasStore.updateMany([
     { id: linhaA.id, changes: { comodos: linhaB.comodos, folga: linhaB.folga } },
     { id: linhaB.id, changes: { comodos: linhaA.comodos, folga: linhaA.folga } }
   ]);
 
   res.json({ success: true, escala: resultados });
-});
+}));
 
-app.post('/api/escala/gerar', (req, res) => {
-  const integrantes = IntegrantesStore.list();
-  const comodos = ComodosStore.list().sort(sortByOrderThenName);
+app.post('/api/escala/gerar', asyncHandler(async (req, res) => {
+  const integrantes = await IntegrantesStore.list();
+  const comodos = (await ComodosStore.list()).sort(sortByOrderThenName);
   const semanaAtual = getSemanaAtual();
 
   // Histórico = todas as escalas exceto a semana atual (que está sendo regerada)
-  const historico = EscalasStore.list().filter(e =>
+  const historico = (await EscalasStore.list()).filter(e =>
     !(e.ano === semanaAtual.ano && e.semana === semanaAtual.semana)
   );
 
@@ -687,12 +657,12 @@ app.post('/api/escala/gerar', (req, res) => {
     novaEscala.push(linha);
   });
 
-  EscalasStore.replaceSemana(semanaAtual.ano, semanaAtual.semana, novaEscala);
+  await EscalasStore.replaceSemana(semanaAtual.ano, semanaAtual.semana, novaEscala);
 
   // Sorteia uma nova "motivação da semana" a cada geração de escala
-  const config = ConfigStore.get();
-  config.motivacaoDestaque = sortearMotivacaoDestaque(config);
-  ConfigStore.save(config);
+  const config = await ConfigStore.get();
+  config.motivacaoDestaque = await sortearMotivacaoDestaque(config);
+  await ConfigStore.save(config);
 
   res.json({
     escala: novaEscala,
@@ -706,21 +676,21 @@ app.post('/api/escala/gerar', (req, res) => {
         return integrante ? integrante.nome : integranteId;
       })
   });
-});
+}));
 
 // ===== ROTAS DE INFRAÇÕES =====
-app.get('/api/infracoes/:integranteId', (req, res) => {
-  res.json(InfracoesStore.listByIntegranteId(req.params.integranteId));
-});
+app.get('/api/infracoes/:integranteId', asyncHandler(async (req, res) => {
+  res.json(await InfracoesStore.listByIntegranteId(req.params.integranteId));
+}));
 
-app.post('/api/infracoes', (req, res) => {
+app.post('/api/infracoes', asyncHandler(async (req, res) => {
   const { integranteId, descricao, dataSemana } = req.body;
 
   if (!integranteId) {
     return res.status(400).json({ error: 'integranteId é obrigatório' });
   }
 
-  const integrante = IntegrantesStore.findById(integranteId);
+  const integrante = await IntegrantesStore.findById(integranteId);
   if (!integrante) {
     return res.status(400).json({ error: 'Integrante não encontrado' });
   }
@@ -729,7 +699,7 @@ app.post('/api/infracoes', (req, res) => {
     return res.status(400).json({ error: 'A descrição da infração é obrigatória' });
   }
 
-  const novaInfracao = InfracoesStore.create({
+  const novaInfracao = await InfracoesStore.create({
     integranteId: integrante.id,
     integranteNome: integrante.nome,
     descricao,
@@ -737,10 +707,10 @@ app.post('/api/infracoes', (req, res) => {
   });
 
   res.json(novaInfracao);
-});
+}));
 
-app.put('/api/infracoes/:id', (req, res) => {
-  const existente = InfracoesStore.findById(req.params.id);
+app.put('/api/infracoes/:id', asyncHandler(async (req, res) => {
+  const existente = await InfracoesStore.findById(req.params.id);
   if (!existente) {
     return res.status(404).json({ error: 'Infração não encontrada' });
   }
@@ -756,22 +726,22 @@ app.put('/api/infracoes/:id', (req, res) => {
   }
   if (dataSemana !== undefined) changes.dataSemana = dataSemana;
 
-  const atualizada = InfracoesStore.update(req.params.id, changes);
+  const atualizada = await InfracoesStore.update(req.params.id, changes);
   res.json(atualizada);
-});
+}));
 
-app.delete('/api/infracoes/:id', (req, res) => {
-  const existente = InfracoesStore.findById(req.params.id);
+app.delete('/api/infracoes/:id', asyncHandler(async (req, res) => {
+  const existente = await InfracoesStore.findById(req.params.id);
   if (!existente) {
     return res.status(404).json({ error: 'Infração não encontrada' });
   }
-  InfracoesStore.remove(req.params.id);
+  await InfracoesStore.remove(req.params.id);
   res.json({ success: true });
-});
+}));
 
-app.get('/api/infracoes-resumo/todas', (req, res) => {
-  const infracoes = InfracoesStore.list();
-  const integrantesAtivos = IntegrantesStore.list().filter(i => i.ativo !== false);
+app.get('/api/infracoes-resumo/todas', asyncHandler(async (req, res) => {
+  const infracoes = await InfracoesStore.list();
+  const integrantesAtivos = (await IntegrantesStore.list()).filter(i => i.ativo !== false);
   const resumo = {};
 
   integrantesAtivos.forEach(integrante => {
@@ -783,10 +753,10 @@ app.get('/api/infracoes-resumo/todas', (req, res) => {
     };
   });
 
-  infracoes.forEach(infracao => {
+  for (const infracao of infracoes) {
     const chave = String(infracao.integranteId);
     if (!resumo[chave]) {
-      const integrante = IntegrantesStore.findById(infracao.integranteId);
+      const integrante = await IntegrantesStore.findById(infracao.integranteId);
       resumo[chave] = {
         integranteId: infracao.integranteId,
         integranteNome: integrante ? integrante.nome : infracao.integranteNome,
@@ -796,17 +766,17 @@ app.get('/api/infracoes-resumo/todas', (req, res) => {
     }
     resumo[chave].total++;
     resumo[chave].infracoes.push(infracao);
-  });
+  }
 
   res.json(resumo);
-});
+}));
 
 // ===== CONFIGURAÇÕES (LOGO, FUNDO E CORES) =====
-app.get('/api/config', (req, res) => {
-  res.json(ConfigStore.get());
-});
+app.get('/api/config', asyncHandler(async (req, res) => {
+  res.json(await ConfigStore.get());
+}));
 
-app.post('/api/config/cores', (req, res) => {
+app.post('/api/config/cores', asyncHandler(async (req, res) => {
   const { cores } = req.body;
 
   if (!cores || typeof cores !== 'object') {
@@ -820,104 +790,89 @@ app.post('/api/config/cores', (req, res) => {
     });
   }
 
-  const config = ConfigStore.get();
+  const config = await ConfigStore.get();
   config.cores = { ...config.cores, ...cores };
-  ConfigStore.save(config);
+  await ConfigStore.save(config);
   res.json({ success: true, config });
-});
+}));
 
-app.post('/api/config/logo', upload.single('logo'), (req, res) => {
+app.post('/api/config/logo', upload.single('logo'), asyncHandler(async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'Nenhum arquivo enviado' });
   }
 
-  const config = ConfigStore.get();
-  deleteUploadFile(config.logo);
-  config.logo = `/uploads/${req.file.filename}`;
-  ConfigStore.save(config);
+  const config = await ConfigStore.get();
+  await deleteImage(config.logo);
+  const { path: imagePath } = await uploadImage(req.file.buffer, req.file.originalname, req.file.mimetype);
+  config.logo = imagePath;
+  await ConfigStore.save(config);
 
   res.json({
     success: true,
     logo: config.logo,
     config
   });
-});
+}));
 
-app.post('/api/config/background', upload.single('image'), (req, res) => {
+app.post('/api/config/background', upload.single('image'), asyncHandler(async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'Nenhuma imagem enviada' });
   }
 
-  const config = ConfigStore.get();
-  deleteUploadFile(config.background);
-  config.background = `/uploads/${req.file.filename}`;
-  ConfigStore.save(config);
+  const config = await ConfigStore.get();
+  await deleteImage(config.background);
+  const { path: imagePath } = await uploadImage(req.file.buffer, req.file.originalname, req.file.mimetype);
+  config.background = imagePath;
+  await ConfigStore.save(config);
 
   res.json({
     success: true,
     background: config.background,
     config
   });
-});
+}));
 
-app.get('/api/uploads/motivacao', (req, res) => {
-  const config = ConfigStore.get();
-  const files = listarGaleriaMotivacao(config).sort((a, b) => b.localeCompare(a));
+app.get('/api/uploads/motivacao', asyncHandler(async (req, res) => {
+  const config = await ConfigStore.get();
+  const imagens = await listGalleryImages({ exclude: [config.logo, config.background].filter(Boolean) });
 
-  res.json(files.map(fileName => ({
-    filename: fileName,
-    path: `/uploads/${fileName}`
-  })));
-});
+  res.json(imagens.sort((a, b) => b.filename.localeCompare(a.filename)));
+}));
 
-app.post('/api/config/motivacao-destaque', (req, res) => {
+app.post('/api/config/motivacao-destaque', asyncHandler(async (req, res) => {
   const { path: imagemPath } = req.body;
 
-  if (!imagemPath || typeof imagemPath !== 'string') {
+  if (!imagemPath || typeof imagemPath !== 'string' || !getKeyFromUrl(imagemPath)) {
     return res.status(400).json({ error: 'Informe uma imagem válida' });
   }
 
-  const fileName = path.basename(imagemPath);
-  const fullPath = path.join(uploadsDir, fileName);
-
-  if (!fs.existsSync(fullPath)) {
-    return res.status(404).json({ error: 'Imagem não encontrada' });
-  }
-
-  const config = ConfigStore.get();
-  config.motivacaoDestaque = `/uploads/${fileName}`;
-  ConfigStore.save(config);
+  const config = await ConfigStore.get();
+  config.motivacaoDestaque = imagemPath;
+  await ConfigStore.save(config);
 
   res.json({
     success: true,
     motivacaoDestaque: config.motivacaoDestaque,
     config
   });
-});
+}));
 
-app.delete('/api/uploads/motivacao/:filename', (req, res) => {
+app.delete('/api/uploads/motivacao/:filename', asyncHandler(async (req, res) => {
   const { filename } = req.params;
   if (!filename) {
     return res.status(400).json({ error: 'Arquivo inválido' });
   }
 
-  const targetFile = path.basename(filename);
-  const targetPath = path.join(uploadsDir, targetFile);
+  await deleteImageByFilename(filename);
 
-  if (!fs.existsSync(targetPath)) {
-    return res.status(404).json({ error: 'Imagem não encontrada' });
-  }
-
-  fs.unlinkSync(targetPath);
-
-  const config = ConfigStore.get();
-  if (getFileNameFromUploadPath(config.motivacaoDestaque) === targetFile) {
+  const config = await ConfigStore.get();
+  if (getKeyFromUrl(config.motivacaoDestaque) === filename) {
     config.motivacaoDestaque = null;
-    ConfigStore.save(config);
+    await ConfigStore.save(config);
   }
 
   res.json({ success: true });
-});
+}));
 
 // Middleware de erro (converte falhas de upload — tamanho/tipo — em resposta JSON 400)
 app.use((err, req, res, next) => {
