@@ -52,7 +52,7 @@
   {
     "imagem": null,
     "apenassuiteMembers": false,
-    "pessoasNecessarias": 2,
+    "pessoasNecessarias": 1,
     "permitirMultiplasAtribuicoes": false,
     "obrigatorio": true,
     "ordem": 6,
@@ -81,11 +81,12 @@
   },
   {
     "imagem": null,
-    "pessoasNecessarias": 2,
+    "apenassuiteMembers": false,
+    "pessoasNecessarias": 1,
     "permitirMultiplasAtribuicoes": false,
     "obrigatorio": true,
-    "ordem": 9,
-    "nome": "Quintal",
-    "id": "fd4ca0b3-064f-419c-bf92-124bd149bbe3"
+    "ordem": 0,
+    "nome": "WC SOCIAL",
+    "id": "f2d853c3-17f2-45fb-80af-f2c5d77da57b"
   }
 ]

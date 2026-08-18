@@ -528,84 +528,47 @@ function renderizarEscalaTabela(escalas) {
     container.innerHTML = '';
     const resumoInfracoes = app.infracoes || {};
     const totalFolgas = escalas.filter(escala => Array.isArray(escala.comodos) && escala.comodos.includes('FOLGA')).length;
-    const totalTarefas = escalas.filter(escala => !(Array.isArray(escala.comodos) && escala.comodos.includes('FOLGA'))).length;
     const totalXs = Object.values(resumoInfracoes).reduce((sum, dados) => sum + (dados?.total || 0), 0);
     const destaqueMotivacao = app.motivacaoDestaque || app.motivacoes[0]?.path || null;
-    const cardsEsquerda = [];
-    const cardsDireita = [];
 
-    escalas.forEach((escala, index) => {
+    const cards = escalas.map(escala => {
         const isFolga = Array.isArray(escala.comodos) && escala.comodos.includes('FOLGA');
         const totalInfracoes = resumoInfracoes[escala.integranteId]?.total || 0;
-        const xsVisual = totalInfracoes > 0 ? 'X'.repeat(Math.min(totalInfracoes, 10)) : '—';
         const tarefas = Array.isArray(escala.comodos) ? escala.comodos.filter(item => item !== 'FOLGA') : [];
-        const badgeClass = isFolga ? 'escala-card-badge folga' : 'escala-card-badge';
 
-        const cardHtml = `
+        const rotulo = isFolga
+            ? '😴 Folga'
+            : (tarefas.length > 0 ? tarefas.join(', ').toUpperCase() : 'Nenhum cômodo');
+
+        return `
             <article class="escala-card ${isFolga ? 'folga' : ''}">
-                <div class="escala-card-top">
-                    <div class="escala-card-person">
-                        <div class="escala-card-name">${escala.integranteNome}</div>
-                        <div class="escala-card-status">${isFolga ? 'Folga' : 'Em escala'}</div>
-                    </div>
-                    <div class="${badgeClass}">
-                        <span class="xs-count">${totalInfracoes}</span>
-                        <span class="xs-label">${xsVisual}</span>
-                    </div>
+                <div class="escala-card-info">
+                    <span class="escala-card-name">${escala.integranteNome}</span>
+                    <span class="escala-card-comodo ${isFolga ? 'is-folga' : ''}">- ${rotulo}</span>
                 </div>
-                <div class="escala-card-body">
-                    <div class="escala-card-label">Cômodos</div>
-                    <div class="escala-room-list">
-                        ${tarefas.length > 0 ? tarefas.map(tarefa => `<span class="room-chip">${tarefa}</span>`).join('') : '<span class="room-chip room-chip-empty">Nenhum</span>'}
-                    </div>
-                </div>
-                <div class="escala-card-actions">
-                    ${!isFolga ? `<button class="btn btn-secondary" onclick="marcarInfracaoRapido('${escala.integranteId}', '${escala.integranteNome}')">❌ Marcar X</button>` : '<span class="folga-chip">Folga automática</span>'}
+                <div class="escala-card-right">
+                    <span class="escala-card-badge ${isFolga ? 'folga' : ''}" title="${totalInfracoes} infração(ões)">${totalInfracoes}</span>
+                    ${!isFolga ? `<button class="escala-card-x-btn" title="Marcar X" onclick="marcarInfracaoRapido('${escala.integranteId}', '${escala.integranteNome}')">❌</button>` : ''}
                 </div>
             </article>
         `;
+    }).join('');
 
-        if (index % 2 === 0) {
-            cardsEsquerda.push(cardHtml);
-        } else {
-            cardsDireita.push(cardHtml);
-        }
-    });
-
-    let html = `
+    const html = `
         <div class="escala-dashboard">
             <div class="escala-dashboard-header">
-                <div class="escala-dashboard-heading">
-                    <h3 class="escala-dashboard-title">Escala da semana</h3>
-                    <p class="escala-dashboard-subtitle">Cartões com tarefas, folga e marcação de infrações</p>
-                </div>
+                <h3 class="escala-dashboard-title">Escala da semana</h3>
                 <div class="escala-dashboard-stats">
                     <span class="stat-chip">${escalas.length} pessoas</span>
                     <span class="stat-chip">${totalFolgas} folga(s)</span>
-                    <span class="stat-chip">${totalTarefas} em tarefa</span>
                     <span class="stat-chip">${totalXs} X(s)</span>
                 </div>
-                <div class="escala-dashboard-legend">
-                    <span class="legend-pill legend-plain">Tarefa</span>
-                    <span class="legend-pill legend-folga">Folga</span>
-                    <span class="legend-pill legend-x">1 X = X</span>
-                </div>
             </div>
-            <div class="escala-orbit-layout">
-                <section class="orbit-column orbit-left">
-                    ${cardsEsquerda.join('')}
-                </section>
-                <section class="orbit-center">
-                    <div class="motivacao-destaque-section motivacao-section-scale">
-                        <h3>📸 Motivação da semana</h3>
-                        <div id="motivacao-destaque-container" class="motivacao-destaque-container">
-                            ${destaqueMotivacao ? `<div class="motivacao-destaque-card"><img src="${destaqueMotivacao}" alt="Imagem de motivação da semana"><div class="motivacao-destaque-label">Imagem em destaque</div></div>` : '<p class="empty-state">Nenhuma imagem de motivação disponível.</p>'}
-                        </div>
-                    </div>
-                </section>
-                <section class="orbit-column orbit-right">
-                    ${cardsDireita.join('')}
-                </section>
+            <div id="motivacao-destaque-container" class="motivacao-destaque-container">
+                ${destaqueMotivacao ? `<div class="motivacao-destaque-card"><img src="${destaqueMotivacao}" alt="Imagem de motivação da semana"></div>` : '<p class="empty-state">Sem imagem</p>'}
+            </div>
+            <div class="escala-cards-grid">
+                ${cards}
             </div>
         </div>
     `;
@@ -666,6 +629,9 @@ async function gerarNovaEscala() {
         }
 
         app.escalas = novaEscala;
+        if (!Array.isArray(resultado) && resultado.motivacaoDestaque !== undefined) {
+            app.motivacaoDestaque = resultado.motivacaoDestaque;
+        }
         renderizarEscalaTabela(novaEscala);
         const criticas = Array.isArray(resultado.criticas) ? resultado.criticas : [];
         renderizarCriticasEscala(criticas, 'warning');
@@ -972,15 +938,13 @@ function renderizarMotivacaoDestaque(imagemPath, imagens = []) {
     if (!container) return;
 
     if (!imagemPath) {
-        container.innerHTML = '<p class="empty-state">Nenhuma imagem de motivação disponível.</p>';
+        container.innerHTML = '<p class="empty-state">Sem imagem</p>';
         return;
     }
 
-    const imagem = imagens.find(item => item.path === imagemPath);
     container.innerHTML = `
         <div class="motivacao-destaque-card">
             <img src="${imagemPath}" alt="Imagem de motivação da semana">
-            <div class="motivacao-destaque-label">Imagem em destaque${imagem ? ` • ${imagem.filename}` : ''}</div>
         </div>
     `;
 }

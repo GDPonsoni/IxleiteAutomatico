@@ -86,6 +86,29 @@ const deleteUploadFile = (imagePathOrUrl) => {
   fs.unlink(path.join(uploadsDir, fileName), () => {});
 };
 
+// Lista os arquivos de imagem disponíveis para a galeria motivacional (exclui logo e fundo)
+const listarGaleriaMotivacao = (config) => {
+  const logoFile = getFileNameFromUploadPath(config.logo);
+  const backgroundFile = getFileNameFromUploadPath(config.background);
+
+  return fs.readdirSync(uploadsDir, { withFileTypes: true })
+    .filter(entry => entry.isFile())
+    .map(entry => entry.name)
+    .filter(fileName => isImageFile(fileName))
+    .filter(fileName => fileName !== logoFile && fileName !== backgroundFile);
+};
+
+// Escolhe uma imagem aleatória da galeria, evitando repetir a atual quando há outra opção
+const sortearMotivacaoDestaque = (config) => {
+  const galeria = listarGaleriaMotivacao(config);
+  if (galeria.length === 0) return config.motivacaoDestaque || null;
+
+  const candidatos = galeria.filter(fileName => `/uploads/${fileName}` !== config.motivacaoDestaque);
+  const pool = candidatos.length > 0 ? candidatos : galeria;
+  const escolhido = pool[Math.floor(Math.random() * pool.length)];
+  return `/uploads/${escolhido}`;
+};
+
 // Segunda-feira (00:00) da semana da data informada, sem mutar a data original
 function getMondayOfWeek(date) {
   const d = new Date(date);
@@ -666,10 +689,16 @@ app.post('/api/escala/gerar', (req, res) => {
 
   EscalasStore.replaceSemana(semanaAtual.ano, semanaAtual.semana, novaEscala);
 
+  // Sorteia uma nova "motivação da semana" a cada geração de escala
+  const config = ConfigStore.get();
+  config.motivacaoDestaque = sortearMotivacaoDestaque(config);
+  ConfigStore.save(config);
+
   res.json({
     escala: novaEscala,
     alerta: alerta,
     criticas: criticas,
+    motivacaoDestaque: config.motivacaoDestaque,
     integrantesComMultiplos: Array.from(assignedCounts.entries())
       .filter(([, total]) => total > 1)
       .map(([integranteId]) => {
@@ -833,15 +862,7 @@ app.post('/api/config/background', upload.single('image'), (req, res) => {
 
 app.get('/api/uploads/motivacao', (req, res) => {
   const config = ConfigStore.get();
-  const logoFile = getFileNameFromUploadPath(config.logo);
-  const backgroundFile = getFileNameFromUploadPath(config.background);
-
-  const files = fs.readdirSync(uploadsDir, { withFileTypes: true })
-    .filter(entry => entry.isFile())
-    .map(entry => entry.name)
-    .filter(fileName => isImageFile(fileName))
-    .filter(fileName => fileName !== logoFile && fileName !== backgroundFile)
-    .sort((a, b) => b.localeCompare(a));
+  const files = listarGaleriaMotivacao(config).sort((a, b) => b.localeCompare(a));
 
   res.json(files.map(fileName => ({
     filename: fileName,

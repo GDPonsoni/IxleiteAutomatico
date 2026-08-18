@@ -280,7 +280,7 @@
     ]
   },
   {
-    "id": "ad599f23-d78a-46b0-b5b4-1d53e6ae8809",
+    "id": "320172bd-54cf-4f33-9535-d82ed85bc1c7",
     "ano": 2026,
     "semana": 34,
     "integranteId": "24f94287-eb70-4341-ac17-9706be1a295d",
@@ -294,22 +294,21 @@
     "alerta": null
   },
   {
-    "id": "adbcd105-3053-4c5c-ab0a-2c272adf4cca",
+    "id": "79c666e7-692e-4b0d-8a4c-382744d1ea2e",
     "ano": 2026,
     "semana": 34,
     "integranteId": "66dfba8f-c188-4871-93b8-083cf1b9982a",
     "integranteNome": "Gambiarra",
     "folga": false,
     "comodos": [
-      "Sacada",
-      "Cozinha"
+      "Lavar panos/tapetes"
     ],
     "dataInicio": "2026-08-17T03:00:00.000Z",
     "dataFim": "2026-08-23T03:00:00.000Z",
     "alerta": null
   },
   {
-    "id": "c78625d7-85cf-4591-9324-932b454d8c57",
+    "id": "7aafc233-bb9b-44af-bd22-91272a2067bd",
     "ano": 2026,
     "semana": 34,
     "integranteId": "49e0277b-89ce-4024-981d-6a80b1f34084",
@@ -323,7 +322,7 @@
     "alerta": null
   },
   {
-    "id": "8b265a7a-342b-44a3-82a2-9d78a1ffd388",
+    "id": "347267f2-73ed-47a7-9301-45cfc5066c53",
     "ano": 2026,
     "semana": 34,
     "integranteId": "dc5b4250-21e9-4ca5-bbce-333e1a3e723b",
@@ -337,11 +336,39 @@
     "alerta": null
   },
   {
-    "id": "9616f7d9-a958-40b1-902b-93288b001a6e",
+    "id": "4083ec38-2ede-4cf5-baa9-791cabb62ac1",
     "ano": 2026,
     "semana": 34,
     "integranteId": "e64d1b88-9c97-49d8-8c69-763a0b8849eb",
     "integranteNome": "Radinho",
+    "folga": true,
+    "comodos": [
+      "FOLGA"
+    ],
+    "dataInicio": "2026-08-17T03:00:00.000Z",
+    "dataFim": "2026-08-23T03:00:00.000Z",
+    "alerta": null
+  },
+  {
+    "id": "5043493b-7bcc-4399-bbc3-2030dc3d4baf",
+    "ano": 2026,
+    "semana": 34,
+    "integranteId": "b4183f68-5077-47d2-994f-158edb75995c",
+    "integranteNome": "Vorcaro",
+    "folga": false,
+    "comodos": [
+      "Sacada"
+    ],
+    "dataInicio": "2026-08-17T03:00:00.000Z",
+    "dataFim": "2026-08-23T03:00:00.000Z",
+    "alerta": null
+  },
+  {
+    "id": "e9f8f2f9-b5f7-4bba-b99b-d322eae1781d",
+    "ano": 2026,
+    "semana": 34,
+    "integranteId": "9060c789-ff5f-46bf-be6d-5d33d4dae763",
+    "integranteNome": "Terezinha",
     "folga": false,
     "comodos": [
       "Cozinha"
@@ -351,53 +378,11 @@
     "alerta": null
   },
   {
-    "id": "7f5fca9d-9798-4ba9-a702-a03f5267d0ac",
-    "ano": 2026,
-    "semana": 34,
-    "integranteId": "b4183f68-5077-47d2-994f-158edb75995c",
-    "integranteNome": "Vorcaro",
-    "folga": false,
-    "comodos": [
-      "Quintal"
-    ],
-    "dataInicio": "2026-08-17T03:00:00.000Z",
-    "dataFim": "2026-08-23T03:00:00.000Z",
-    "alerta": null
-  },
-  {
-    "id": "c9289d1f-f848-4bb5-952e-6e8e44a931d7",
-    "ano": 2026,
-    "semana": 34,
-    "integranteId": "9060c789-ff5f-46bf-be6d-5d33d4dae763",
-    "integranteNome": "Terezinha",
-    "folga": false,
-    "comodos": [
-      "Quintal"
-    ],
-    "dataInicio": "2026-08-17T03:00:00.000Z",
-    "dataFim": "2026-08-23T03:00:00.000Z",
-    "alerta": null
-  },
-  {
-    "id": "b6bf17b1-71a2-41d8-a3f5-228b5d57775d",
+    "id": "8ce92489-1144-4da4-825a-970fc9ebb77f",
     "ano": 2026,
     "semana": 34,
     "integranteId": "16d3a7d7-5723-4157-ba67-cf8290f95654",
     "integranteNome": "Boquinha",
-    "folga": false,
-    "comodos": [
-      "Lavar panos/tapetes"
-    ],
-    "dataInicio": "2026-08-17T03:00:00.000Z",
-    "dataFim": "2026-08-23T03:00:00.000Z",
-    "alerta": null
-  },
-  {
-    "id": "b3889693-1653-4b24-871b-ce53d3f738d4",
-    "ano": 2026,
-    "semana": 34,
-    "integranteId": "78745978-17c0-4760-8b07-5f14b448e1c8",
-    "integranteNome": "Beta",
     "folga": false,
     "comodos": [
       "Lanhouse + corredor"
@@ -407,7 +392,21 @@
     "alerta": null
   },
   {
-    "id": "cc46bbdc-58e0-4cc8-a1ea-4fcbd3de9e36",
+    "id": "86b9f355-941a-49e4-9de4-2ffdac1488de",
+    "ano": 2026,
+    "semana": 34,
+    "integranteId": "78745978-17c0-4760-8b07-5f14b448e1c8",
+    "integranteNome": "Beta",
+    "folga": false,
+    "comodos": [
+      "WC SOCIAL"
+    ],
+    "dataInicio": "2026-08-17T03:00:00.000Z",
+    "dataFim": "2026-08-23T03:00:00.000Z",
+    "alerta": null
+  },
+  {
+    "id": "5856a581-24ed-4650-a283-7eb014842bb5",
     "ano": 2026,
     "semana": 34,
     "integranteId": "81b6850d-40da-4ba2-a1b5-48221c7ce455",
@@ -415,20 +414,6 @@
     "folga": false,
     "comodos": [
       "WC Suíte"
-    ],
-    "dataInicio": "2026-08-17T03:00:00.000Z",
-    "dataFim": "2026-08-23T03:00:00.000Z",
-    "alerta": null
-  },
-  {
-    "id": "b6f91d6d-f276-4174-a871-027e7fc59764",
-    "ano": 2026,
-    "semana": 34,
-    "integranteId": "6316e6e0-88f5-498d-bc73-6dbafc722dfe",
-    "integranteNome": "TesteNovo",
-    "folga": false,
-    "comodos": [
-      "Cozinha"
     ],
     "dataInicio": "2026-08-17T03:00:00.000Z",
     "dataFim": "2026-08-23T03:00:00.000Z",

@@ -146,32 +146,6 @@ body::before {
     overflow-y: auto;
 }
 
-body.scale-view .main-content {
-    padding: 18px;
-    overflow: hidden;
-}
-
-body.scale-view .tab-content.active {
-    min-height: calc(100vh - 240px);
-}
-
-body.scale-view .section-header {
-    margin-bottom: 12px;
-}
-
-body.scale-view .section-header h2 {
-    font-size: 1.7em;
-}
-
-body.scale-view .semana-info {
-    margin-bottom: 12px;
-    padding: 10px 12px;
-}
-
-body.scale-view .criticas-escala-container {
-    margin-bottom: 12px;
-}
-
 .tab-content {
     display: none;
     animation: fadeIn 0.3s ease-in;
@@ -313,172 +287,73 @@ body.scale-view .criticas-escala-container {
     margin-left: 18px;
     display: grid;
     gap: 8px;
-    
-    body.scale-view .escala-dashboard {
-        gap: 12px;
-    }
 }
 
 .escala-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
     margin-bottom: 40px;
 }
 
 .escala-dashboard {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    
-    body.scale-view .escala-dashboard {
-        gap: 12px;
-    }
+    gap: 10px;
 }
 
 .escala-dashboard-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
-    gap: 15px;
+    align-items: center;
+    gap: 10px;
     flex-wrap: wrap;
     background: rgba(255, 255, 255, 0.85);
     border: 2px solid var(--border-color);
-    border-radius: 14px;
-    padding: 18px 20px;
+    border-radius: 12px;
+    padding: 8px 12px;
     box-shadow: var(--shadow);
-    
-    body.scale-view .escala-dashboard-header {
-        padding: 12px 14px;
-        gap: 10px;
-        align-items: center;
-    }
-    
-    .escala-dashboard-heading {
-        min-width: 220px;
-    }
-    
-    .escala-dashboard-stats {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-    
-    .stat-chip {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 6px 10px;
-        border-radius: 999px;
-        background: #000;
-        color: #fff;
-        font-size: 0.82em;
-        font-weight: 700;
-        border: 2px solid #000;
-    }
 }
 
 .escala-dashboard-title {
-    font-size: 1.4em;
+    font-size: 1em;
     color: var(--primary-color);
-    margin-bottom: 6px;
 }
 
-.escala-dashboard-subtitle {
-    color: #555;
-    font-size: 0.95em;
-}
-
-.escala-dashboard-legend {
+.escala-dashboard-stats {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    
-    body.scale-view .escala-dashboard-legend {
-        margin-left: auto;
-    }
+    gap: 6px;
 }
 
-.legend-pill,
-.folga-chip,
-.room-chip,
-.escala-card-badge {
+.stat-chip {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    padding: 4px 9px;
     border-radius: 999px;
-    font-weight: 700;
-}
-
-.legend-pill {
-    padding: 6px 10px;
-    border: 2px solid #000;
-    background: #fff;
-    color: #000;
-    font-size: 0.8em;
-}
-
-.legend-folga {
-    background: linear-gradient(135deg, #FFD700 0%, #FFB700 100%);
-}
-
-.legend-x {
     background: #000;
     color: #fff;
+    font-size: 0.72em;
+    font-weight: 700;
+    border: 2px solid #000;
 }
 
-.escala-card-grid {
+/* Grade de cards: 1 coluna no mobile, mais colunas conforme a tela cresce */
+.escala-cards-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 18px;
-    
-    .escala-dashboard-layout {
-        display: grid;
-        grid-template-columns: minmax(320px, 0.9fr) minmax(420px, 1.1fr);
-        gap: 16px;
-        align-items: start;
-    }
-    
-    body.scale-view .escala-dashboard-layout {
-        grid-template-columns: minmax(300px, 0.95fr) minmax(390px, 1.05fr);
-        gap: 14px;
-    }
-    
-    .escala-dashboard-column {
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-    }
-    
-    .cards-column {
-        min-width: 0;
-    }
-    
-    body.scale-view .escala-card-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10px;
-    }
+    grid-template-columns: 1fr;
+    gap: 8px;
 }
 
 .escala-card {
     position: relative;
     background: rgba(255, 255, 255, 0.96);
-    border: 3px solid var(--primary-color);
-    border-radius: 18px;
-    padding: 18px;
+    border: 2px solid var(--primary-color);
+    border-radius: 10px;
+    padding: 8px 10px;
     box-shadow: var(--shadow);
     display: flex;
-    flex-direction: column;
-    gap: 14px;
-    min-height: 220px;
-    
-    body.scale-view .escala-card {
-        min-height: 146px;
-        padding: 12px 14px;
-        gap: 10px;
-        border-width: 2px;
-        border-radius: 14px;
-    }
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
 }
 
 .escala-card.folga {
@@ -486,54 +361,59 @@ body.scale-view .criticas-escala-container {
     border-color: #000;
 }
 
-.escala-card-top {
+.escala-card-info {
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 12px;
-    
-    body.scale-view .escala-card-top {
-        gap: 8px;
-    }
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 8px;
+    min-width: 0;
+    flex: 1;
 }
 
 .escala-card-name {
-    font-size: 1.2em;
+    font-size: 0.9em;
     font-weight: 800;
     color: var(--dark-color);
-    
-    body.scale-view .escala-card-name {
-        font-size: 1em;
-    }
+    line-height: 1.2;
+    white-space: nowrap;
 }
 
-.escala-card-status {
-    color: #666;
-    font-size: 0.9em;
-    margin-top: 4px;
-    
-    body.scale-view .escala-card-status {
-        font-size: 0.8em;
-    }
+.escala-card-comodo {
+    font-size: 0.85em;
+    font-weight: 800;
+    color: var(--primary-color);
+    text-transform: uppercase;
+    letter-spacing: 0.2px;
+    line-height: 1.2;
+    overflow-wrap: break-word;
+}
+
+.escala-card-comodo.is-folga {
+    color: #7a5b00;
+    text-transform: none;
+}
+
+.escala-card-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
 }
 
 .escala-card-badge {
-    min-width: 76px;
-    min-height: 66px;
-    padding: 8px 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    font-weight: 700;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
     background: #111;
     color: #fff;
-    font-size: 1em;
-    letter-spacing: 1px;
+    font-size: 0.78em;
     box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.15);
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    
-    body.scale-view .escala-card-badge {
-        min-width: 84px;
-        min-height: 68px;
-    }
+    flex-shrink: 0;
 }
 
 .escala-card-badge.folga {
@@ -541,87 +421,37 @@ body.scale-view .criticas-escala-container {
     color: #DC0000;
 }
 
-.xs-count {
-    font-size: 1.2em;
-    line-height: 1;
-}
-
-.xs-label {
+.escala-card-x-btn {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: #f1f1f1;
     font-size: 0.75em;
-    text-transform: uppercase;
-    opacity: 0.9;
-}
-
-.xs-visual {
-    font-size: 1.2em;
-    letter-spacing: 0.5px;
     line-height: 1;
-    
-    body.scale-view .xs-visual {
-        font-size: 1.45em;
-        font-weight: 900;
-    }
-}
-
-.escala-card-body {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    
-    body.scale-view .escala-card-body {
-        gap: 6px;
-    }
-}
-
-.escala-card-label {
-    font-size: 0.85em;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #666;
-    font-weight: 700;
-}
-
-.escala-room-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.room-chip {
-    padding: 7px 10px;
-    background: #f6f6f6;
-    border: 1px solid #d9d9d9;
-    color: #111;
-    font-size: 0.88em;
-    
-    body.scale-view .room-chip {
-        padding: 5px 8px;
-        font-size: 0.8em;
-    }
-}
-
-.room-chip-empty {
-    opacity: 0.75;
-}
-
-.escala-card-actions {
-    margin-top: auto;
-    display: flex;
+    cursor: pointer;
+    display: inline-flex;
     align-items: center;
-    justify-content: flex-start;
-    
-    body.scale-view .escala-card-actions .btn,
-    body.scale-view .escala-card-actions .folga-chip {
-        padding: 6px 10px;
-        font-size: 0.78em;
+    justify-content: center;
+    transition: background 0.15s ease;
+}
+
+.escala-card-x-btn:hover {
+    background: #ffd7d7;
+}
+
+@media (min-width: 640px) {
+    .escala-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
-.folga-chip {
-    padding: 8px 12px;
-    background: #111;
-    color: #fff;
-    font-size: 0.9em;
+@media (min-width: 1024px) {
+    .escala-cards-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
 .historico-semana-header {
@@ -641,94 +471,6 @@ body.scale-view .criticas-escala-container {
     color: #777;
     text-align: center;
     padding: 18px;
-}
-
-.escala-card {
-    background: #FFFFFF;
-    border: 4px solid #DC0000;
-    border-radius: 8px;
-    padding: 20px;
-    transition: all 0.3s;
-    box-shadow: var(--shadow);
-}
-
-.escala-card:hover {
-    border-color: #000000;
-    box-shadow: var(--shadow-lg);
-    transform: translateY(-5px);
-}
-
-.escala-card.folga {
-    background: linear-gradient(135deg, #FFD700 0%, #FFB700 100%);
-    color: #000000;
-    border: 4px solid #000000;
-}
-
-.escala-card.suite {
-    background: linear-gradient(135deg, #DC0000 0%, #DC0000 100%);
-    color: #FFFFFF;
-    border: 4px solid #FFD700;
-}
-
-.comodo-nome {
-    font-size: 1.5em;
-    font-weight: bold;
-    color: var(--primary-color);
-    margin-bottom: 10px;
-}
-
-.escala-card.folga .comodo-nome {
-    color: white;
-}
-
-.escala-card.suite .comodo-nome {
-    color: #333;
-}
-
-.comodo-imagem {
-    width: 100%;
-    height: 150px;
-    object-fit: cover;
-    border-radius: 8px;
-    margin: 15px 0;
-}
-
-.integrante-info {
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 2px solid rgba(0, 0, 0, 0.1);
-}
-
-.integrante-nome {
-    font-size: 1.2em;
-    font-weight: bold;
-    color: var(--success-color);
-    margin-bottom: 5px;
-}
-
-.escala-card.folga .integrante-nome {
-    color: white;
-    font-size: 1.8em;
-}
-
-.suite-badge {
-    display: inline-block;
-    background: var(--primary-color);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.8em;
-    margin-left: 5px;
-    font-weight: bold;
-}
-
-.escala-card.suite .suite-badge {
-    background: #ff6b9d;
-}
-
-.infracao-btn {
-    margin-top: 15px;
-    width: 100%;
 }
 
 /* HISTÓRICO */
@@ -983,234 +725,38 @@ body.scale-view .criticas-escala-container {
     padding-top: 30px;
 }
 
-.motivacao-section-scale {
-    background: rgba(255, 255, 255, 0.78);
-    border: 2px solid var(--border-color);
-    border-radius: 16px;
-    padding: 18px;
-    box-shadow: var(--shadow);
-    
-    body.scale-view .motivacao-destaque-section {
-        padding: 12px;
-    }
-}
-
 .motivacao-destaque-container {
     display: flex;
     justify-content: center;
-    align-items: center;
-    
-    body.scale-view .motivacao-destaque-container {
-        min-height: 0;
-    }
+    width: 100%;
 }
 
 .motivacao-destaque-card {
-    width: min(100%, 760px);
+    width: 100%;
+    max-width: 240px;
     background: #fff;
-    border-radius: 18px;
+    border-radius: 12px;
     overflow: hidden;
-    border: 4px solid #000;
+    border: 3px solid #000;
     box-shadow: var(--shadow-lg);
-    
-    body.scale-view .motivacao-destaque-card {
-        width: 100%;
-    }
 }
 
 .motivacao-destaque-card img {
     width: 100%;
-    height: 360px;
+    aspect-ratio: 3 / 4;
     object-fit: cover;
     display: block;
-    
-    body.scale-view .motivacao-destaque-card img {
-        height: 280px;
+}
+
+@media (min-width: 640px) {
+    .motivacao-destaque-card {
+        max-width: 280px;
     }
 }
 
-.motivacao-destaque-label {
-    padding: 14px 16px;
-    background: linear-gradient(135deg, var(--primary-color) 0%, #000 100%);
-    color: #fff;
-    font-weight: 700;
-    text-align: center;
-    
-    .escala-footer-strip {
-        display: grid;
-        grid-template-columns: 1fr 0.8fr;
-        gap: 14px;
-    }
-    
-    .escala-footer-block {
-        background: rgba(255, 255, 255, 0.85);
-        border: 2px solid var(--border-color);
-        border-radius: 14px;
-        padding: 12px 14px;
-        box-shadow: var(--shadow);
-    }
-    
-    .escala-footer-block h4 {
-        margin-bottom: 10px;
-        color: var(--primary-color);
-        font-size: 1em;
-    }
-    
-    .room-strip {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-    
-    .room-strip-chip {
-        padding: 6px 9px;
-        border-radius: 999px;
-        background: #fff;
-        border: 2px solid #000;
-        font-size: 0.8em;
-        font-weight: 700;
-    }
-    
-    .room-strip-chip.optional {
-        background: #f1f1f1;
-        opacity: 0.8;
-    }
-    
-    .room-strip-chip.suite {
-        background: #fff3cd;
-    }
-    
-    .mini-status {
-        font-size: 0.92em;
-        color: #111;
-        line-height: 1.35;
-    }
-    
-    body.scale-view .escala-footer-strip {
-        grid-template-columns: 1.15fr 0.85fr;
-        gap: 10px;
-    }
-    
-    body.scale-view .escala-footer-block {
-        padding: 10px 12px;
-    }
-    
-    body.scale-view .room-strip-chip,
-    body.scale-view .mini-status {
-        font-size: 0.78em;
-    }
-
-    body.scale-view .escala-dashboard-layout,
-    body.scale-view .escala-orbit-layout {
-        display: grid;
-        grid-template-columns: minmax(220px, 0.95fr) minmax(400px, 1.2fr) minmax(220px, 0.95fr);
-        gap: 10px;
-        align-items: start;
-    }
-
-    body.scale-view .orbit-column {
-        display: grid;
-        grid-auto-rows: minmax(114px, auto);
-        gap: 8px;
-    }
-
-    body.scale-view .orbit-center {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    body.scale-view .motivacao-destaque-section {
-        padding: 8px;
-        margin: 0;
-    }
-
-    body.scale-view .motivacao-destaque-container {
-        min-height: 0;
-    }
-
-    body.scale-view .motivacao-destaque-card {
-        width: 100%;
-        max-width: 100%;
-    }
-
-    body.scale-view .motivacao-destaque-card img {
-        height: 470px;
-    }
-
-    body.scale-view .escala-card {
-        min-height: 110px;
-        padding: 8px 10px;
-        gap: 6px;
-        border-width: 2px;
-        border-radius: 10px;
-    }
-
-    body.scale-view .escala-card-top {
-        gap: 8px;
-    }
-
-    body.scale-view .escala-card-name {
-        font-size: 0.95em;
-    }
-
-    body.scale-view .escala-card-status {
-        font-size: 0.75em;
-    }
-
-    body.scale-view .escala-card-badge {
-        min-width: 84px;
-        min-height: 54px;
-        padding: 5px 7px;
-    }
-
-    body.scale-view .xs-count {
-        font-size: 1.1em;
-    }
-
-    body.scale-view .xs-label {
-        font-size: 0.72em;
-    }
-
-    body.scale-view .escala-card-body {
-        gap: 5px;
-    }
-
-    body.scale-view .escala-card-label {
-        font-size: 0.75em;
-    }
-
-    body.scale-view .room-chip {
-        padding: 3px 6px;
-        font-size: 0.7em;
-    }
-
-    body.scale-view .escala-card-actions .btn,
-    body.scale-view .escala-card-actions .folga-chip {
-        padding: 4px 7px;
-        font-size: 0.7em;
-    }
-
-    body.scale-view .escala-orbit-layout .motivacao-destaque-section h3 {
-        margin-bottom: 8px;
-    }
-
-    body.scale-view .escala-dashboard-heading {
-        min-width: 180px;
-    }
-
-    body.scale-view .escala-dashboard-stats {
-        gap: 6px;
-    }
-
-    body.scale-view .stat-chip {
-        padding: 5px 8px;
-        font-size: 0.75em;
-    }
-    
-    body.scale-view .motivacao-destaque-label {
-        padding: 10px 12px;
-        font-size: 0.88em;
+@media (min-width: 1024px) {
+    .motivacao-destaque-card {
+        max-width: 320px;
     }
 }
 
@@ -1465,6 +1011,10 @@ body.scale-view .main-content {
     overflow: hidden;
 }
 
+body.scale-view .tab-content.active {
+    min-height: calc(100vh - 240px);
+}
+
 body.scale-view .section-header {
     margin-bottom: 10px;
 }
@@ -1481,155 +1031,6 @@ body.scale-view .semana-info {
 
 body.scale-view .criticas-escala-container {
     margin-bottom: 10px;
-}
-
-body.scale-view .escala-dashboard {
-    gap: 10px;
-}
-
-body.scale-view .escala-dashboard-header {
-    padding: 10px 12px;
-    gap: 8px;
-    align-items: center;
-}
-
-body.scale-view .escala-dashboard-title {
-    font-size: 1.15em;
-}
-
-body.scale-view .escala-dashboard-subtitle {
-    font-size: 0.82em;
-}
-
-body.scale-view .escala-dashboard-stats {
-    gap: 5px;
-}
-
-body.scale-view .stat-chip {
-    padding: 4px 8px;
-    font-size: 0.72em;
-}
-
-body.scale-view .escala-dashboard-layout,
-body.scale-view .escala-orbit-layout {
-    display: grid;
-    grid-template-columns: minmax(230px, 1fr) minmax(300px, 0.95fr) minmax(230px, 1fr);
-    gap: 10px;
-    align-items: center;
-}
-
-body.scale-view .orbit-column {
-    display: grid;
-    gap: 8px;
-}
-
-body.scale-view .orbit-center {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-body.scale-view .motivacao-destaque-section {
-    margin: 0;
-    padding: 8px;
-}
-
-body.scale-view .motivacao-destaque-card img {
-    height: 300px;
-}
-
-body.scale-view .motivacao-destaque-label {
-    padding: 8px 10px;
-    font-size: 0.82em;
-}
-
-body.scale-view .escala-card-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 8px;
-}
-
-body.scale-view .escala-card {
-    min-height: 88px;
-    padding: 8px 10px;
-    gap: 6px;
-    border-width: 2px;
-    border-radius: 10px;
-}
-
-body.scale-view .escala-card-top {
-    gap: 6px;
-    align-items: center;
-}
-
-body.scale-view .escala-card-name {
-    font-size: 0.88em;
-}
-
-body.scale-view .escala-card-status {
-    font-size: 0.72em;
-    margin-top: 2px;
-}
-
-body.scale-view .escala-card-badge {
-    min-width: 88px;
-    min-height: 54px;
-    padding: 5px 7px;
-    gap: 1px;
-}
-
-body.scale-view .xs-count {
-    font-size: 1em;
-}
-
-body.scale-view .xs-label {
-    font-size: 0.68em;
-}
-
-body.scale-view .escala-card-body {
-    gap: 4px;
-}
-
-body.scale-view .escala-card-label {
-    font-size: 0.7em;
-}
-
-body.scale-view .escala-room-list {
-    gap: 5px;
-}
-
-body.scale-view .room-chip {
-    padding: 4px 6px;
-    font-size: 0.68em;
-}
-
-body.scale-view .escala-card-actions .btn,
-body.scale-view .escala-card-actions .folga-chip {
-    padding: 4px 7px;
-    font-size: 0.7em;
-}
-
-body.scale-view .escala-footer-strip {
-    grid-template-columns: 1.2fr 0.8fr;
-    gap: 8px;
-}
-
-body.scale-view .escala-footer-block {
-    padding: 8px 10px;
-}
-
-body.scale-view .escala-footer-block h4 {
-    margin-bottom: 8px;
-    font-size: 0.92em;
-}
-
-body.scale-view .room-strip {
-    gap: 6px;
-}
-
-body.scale-view .room-strip-chip,
-body.scale-view .mini-status {
-    font-size: 0.7em;
 }
 
 @keyframes fadeIn {
@@ -1727,8 +1128,7 @@ body.scale-view .mini-status {
         width: 100%;
     }
 
-    .escala-dashboard-stats,
-    .escala-dashboard-legend {
+    .escala-dashboard-stats {
         flex-wrap: wrap;
     }
 

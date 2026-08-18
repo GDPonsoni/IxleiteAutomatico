@@ -32,7 +32,7 @@
   {
     "id": "b4183f68-5077-47d2-994f-158edb75995c",
     "nome": "Vorcaro",
-    "isSuite": true,
+    "isSuite": false,
     "ativo": true
   },
   {
@@ -56,12 +56,6 @@
   {
     "id": "81b6850d-40da-4ba2-a1b5-48221c7ce455",
     "nome": "Canalha",
-    "isSuite": true,
-    "ativo": true
-  },
-  {
-    "id": "6316e6e0-88f5-498d-bc73-6dbafc722dfe",
-    "nome": "TesteNovo",
     "isSuite": true,
     "ativo": true
   }
